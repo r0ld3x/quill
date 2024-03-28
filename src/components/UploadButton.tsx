@@ -12,13 +12,14 @@ import Dropzone from "react-dropzone";
 import { Progress } from "./ui/progress";
 import { useToast } from "./ui/use-toast";
 
-const UploadDropZone = () => {
+const UploadDropZone = ({ isSubscribed }: { isSubscribed: boolean }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const { toast } = useToast();
   const router = useRouter();
-  const { startUpload } = useUploadThing("PdfUploader");
+  const { startUpload: freeUpload } = useUploadThing("freePdfUploader");
+  const { startUpload: paidUpload } = useUploadThing("paidPdfUploader");
 
   const startProgress = () => {
     setUploadProgress(0);
@@ -48,7 +49,11 @@ const UploadDropZone = () => {
       onDrop={async (acceptedFile) => {
         setUploading(true);
         const progressInterval = startProgress();
-        const res = await startUpload(acceptedFile);
+        if (isSubscribed) {
+          var res = await freeUpload(acceptedFile);
+        } else {
+          var res = await paidUpload(acceptedFile);
+        }
         if (!res) {
           return toast({
             title: "Something went wrong",
@@ -70,6 +75,9 @@ const UploadDropZone = () => {
         setUploadProgress(100);
         startPolling({ key });
       }}
+      accept={{
+        "application/pdf": [".pdf"],
+      }}
     >
       {({ getRootProps, getInputProps, acceptedFiles }) => (
         <div
@@ -77,12 +85,12 @@ const UploadDropZone = () => {
           className="border h-64 m-4 border-gray-300 rounded-lg"
         >
           <div className="flex items-center justify-center h-full w-full">
-            <input
+            {/* <input
               {...getInputProps()}
               type="file"
               className="hidden"
               id="dropzone-file"
-            />
+            /> */}
             <label
               htmlFor="dropzone-file"
               className="flex flex-col items-center justify-center w-full h-full rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
@@ -93,7 +101,9 @@ const UploadDropZone = () => {
                   <span className="font-semibold">click to upload </span>
                   or drap and drop
                 </p>
-                <p className="text-xs text-zinc-500">PDF (up to 4MB)</p>
+                <p className="text-xs text-zinc-500">
+                  PDF (up to {isSubscribed ? 16 : 4}MB)
+                </p>
               </div>
 
               {acceptedFiles && acceptedFiles[0] ? (
@@ -132,12 +142,12 @@ const UploadDropZone = () => {
   );
 };
 
-const UploadButton = () => {
+const UploadButton = ({ isSubscribed }: { isSubscribed: boolean }) => {
   return (
     <Dialog>
       <DialogTrigger className={buttonVariants()}>Upload PDF</DialogTrigger>
       <DialogContent>
-        <UploadDropZone />
+        <UploadDropZone isSubscribed={isSubscribed} />
       </DialogContent>
     </Dialog>
   );
